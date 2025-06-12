@@ -14,8 +14,6 @@ from rotary_irq_esp import RotaryIRQ
 #modified from forum post by ajevtic
 #https://forum.micropython.org/viewtopic.php?t=12679
 
-
-
 class MAX31850:
     def __init__(self, pin):
         self.pin = Pin(pin, mode=Pin.IN)
