@@ -19,6 +19,7 @@ Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
 ESPRotary r;
 
 float increment = 0.25;
+float temperature = 0.0; // This will eventually be read by thermocouple
 
 void setup() {
   Wire.begin(22, 20);
@@ -44,13 +45,19 @@ void loop() {
 
 void display(ESPRotary& r) {
   float targetTemp = 0.25 * r.getPosition();
-  int length = std::to_string(targetTemp).length() - 4;
-  int time = millis();
-
   lcd.setCursor(0, 0);
   lcd.print("Trgt: ");
   lcd.setCursor(6, 0);
   lcd.print(targetTemp);
+  int length = std::to_string(targetTemp).length() - 4;
+  lcd.setCursor(6+length, 0);
+  lcd.print(" C ");
+
+  lcd.setCursor(0, 0);
+  lcd.print("Temp: ");
+  lcd.setCursor(6, 0);
+  lcd.print(temperature);
+  int length = std::to_string(temperature).length() - 4;
   lcd.setCursor(6+length, 0);
   lcd.print(" C ");
 }
