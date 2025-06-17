@@ -1,4 +1,5 @@
 #include <string>
+#include <cmath>
 #include <Wire.h>
 #include <Adafruit_RGBLCDShield.h>
 #include <utility/Adafruit_MCP23017.h>
@@ -21,6 +22,8 @@ ESPRotary r;
 float increment = 0.25;
 float temperature = 0.0; // This will eventually be read by thermocouple
 
+int active = 0;
+
 void setup() {
   Wire.begin(22, 20);
   lcd.begin(16, 2);
@@ -41,6 +44,18 @@ void setup() {
 
 void loop() {
   r.loop();
+  
+  uint8_t buttons = lcd.readButtons();
+  if (buttons & BUTTON_UP) {
+    active++;
+  }
+  if (buttons & BUTTON_DOWN) {
+    active--;
+  }
+  lcd.setCursor(0, active%2);
+  lcd.print(">");
+  lcd.setCursor(0, (active+1)%2);
+  lcd.print(" ");
 }
 
 void display(ESPRotary& r) {
@@ -53,11 +68,16 @@ void display(ESPRotary& r) {
   lcd.setCursor(6+length, 0);
   lcd.print(" C ");
 
-  lcd.setCursor(0, 0);
+  lcd.setCursor(0, 1);
   lcd.print("Temp: ");
-  lcd.setCursor(6, 0);
+  lcd.setCursor(6, 1);
   lcd.print(temperature);
-  int length = std::to_string(temperature).length() - 4;
-  lcd.setCursor(6+length, 0);
+  length = std::to_string(temperature).length() - 4;
+  lcd.setCursor(6+length, 1);
   lcd.print(" C ");
+
+  float error = std::abs(temperature - targetTemp);
+  if (error < 1.5) lcd.setBacklight(GREEN);
+  else if (error < 5) lcd.setBacklight(YELLOW);
+  else lcd.setBacklight(RED);
 }

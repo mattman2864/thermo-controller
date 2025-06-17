@@ -22,7 +22,7 @@ ESPRotary r;
 float increment = 0.25;
 float temperature = 0.0; // This will eventually be read by thermocouple
 
-int active = 0;
+int t = millis();
 
 void setup() {
   Wire.begin(22, 20);
@@ -33,51 +33,40 @@ void setup() {
 
   r.begin(DT, CLK, 4);
   r.setIncrement(1);
-  r.setChangedHandler(display);
   r.enableSpeedup(true);
-  r.setSpeedupInterval(225);
+  r.setSpeedupInterval(200);
   r.setSpeedupIncrement(8);
+  initdisplay();
 
-  lcd.setBacklight(WHITE);
-  display(r);
 }
 
 void loop() {
   r.loop();
   
-  uint8_t buttons = lcd.readButtons();
-  if (buttons & BUTTON_UP) {
-    active++;
+  if (millis() - t > 500) {
+    display();
+    t = millis();
   }
-  if (buttons & BUTTON_DOWN) {
-    active--;
-  }
-  lcd.setCursor(0, active%2);
-  lcd.print(">");
-  lcd.setCursor(0, (active+1)%2);
-  lcd.print(" ");
+}
+void initdisplay() {
+  lcd.setCursor(0, 0);
+  lcd.print("Trgt: ");
+
+  lcd.setCursor(0, 1);
+  lcd.print("Temp: ");
 }
 
-void display(ESPRotary& r) {
+void display() {
+  lcd.setCursor(6, 0);
   float targetTemp = 0.25 * r.getPosition();
-  lcd.setCursor(1, 0);
-  lcd.print("Trgt: ");
-  lcd.setCursor(7, 0);
   lcd.print(targetTemp);
   int length = std::to_string(targetTemp).length() - 4;
-  lcd.setCursor(7+length, 0);
+  lcd.setCursor(6+length, 0);
   lcd.print(" C ");
 
-  lcd.setCursor(1, 1);
-  lcd.print("Temp: ");
-  lcd.setCursor(7, 1);
+  lcd.setCursor(6, 1);
   lcd.print(temperature);
   length = std::to_string(temperature).length() - 4;
-  lcd.setCursor(7+length, 1);
+  lcd.setCursor(6+length, 1);
   lcd.print(" C ");
-
-  float error = std::abs(temperature - targetTemp);
-  if (error < 1.5) lcd.setBacklight(GREEN);
-  else if (error < 5) lcd.setBacklight(YELLOW);
-  else lcd.setBacklight(RED);
 }
