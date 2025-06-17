@@ -1,15 +1,13 @@
 #pragma once
 #include <Arduino.h>
 
-class RotaryEncoder {
+class RotaryButton {
   public:
-    int PIN1, PIN2, SWITCH;
-    int count, lastCLK, dir;
+    int SWITCH;
     long lastButtonPress;
     bool button;
-    RotaryEncoder(int CLK, int DT, int SW);
+    RotaryButton(int SW);
     void init();
     void loop();
-    int getDirection();
     bool getButtonPressed();
 };
