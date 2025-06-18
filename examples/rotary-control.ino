@@ -1,27 +1,37 @@
-#include "rotary.h"
+#define CLK 33
+#define DT 12
 
-RotaryEncoder encoder(12, 33, 27);
+volatile int dir = 0;
+volatile bool timerflag = false;
+int timer = millis();
+int num = 0;
+
+void update() {
+  if (digitalRead(DT) == LOW) {
+    dir = 1;
+  } else {
+    dir = -1;
+  }
+}
 
 void setup() {
-  globalCount = &(encoder.count);
-  attachInterrupt(digitalPinToInterrupt(encoder.PIN1), RotaryEncoder::increment, RISING);
-  encoder.init();
   Serial.begin(9600);
+  pinMode(DT, INPUT_PULLUP);
+  pinMode(CLK, INPUT_PULLUP);
+  attachInterrupt(CLK, update, RISING);
 }
 
 void loop() {
-  encoder.loop();
-  int dir = encoder.getDirection();
-  bool button = encoder.getButtonPressed();
-  if (button) {
-    Serial.println("Button pressed!");
-    encoder.count = 0; // Reset count on button press 
+  if (dir && timerflag) {
+    num += dir;
+    // Serial.print(num);
+    // Serial.print(" : ");
+    Serial.println(dir);
+    timerflag = false;
+    timer = millis();
   }
-  if (encoder.change) {
-    Serial.print("Count: ");
-    Serial.print(encoder.count);
-    Serial.print(" (");
-    Serial.print(dir);
-    Serial.println(")");
+  if ((!timerflag) && (millis() - timer >= 0)) {
+    timerflag = true;
   }
+  dir = 0;
 }
