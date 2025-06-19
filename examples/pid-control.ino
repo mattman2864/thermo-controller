@@ -46,7 +46,6 @@ DallasTemperature sensors(&oneWire);
 void setup() {
   Wire.begin(22, 20); // SDA: 22, SCL: 20 for i2c
   lcd.begin(16, 2); // 16x2 lcd display
-  delay(1000);
   initdisplay();
   sensors.begin(); // initializing thermocouple over onewire
   Serial.begin(115200); // initializing serial for debugging
@@ -77,15 +76,12 @@ void loop() {
 
   float output = calculate(temperature, millis() - dt);
   dt = millis();
-  analogWrite(27, output * 255);
-  
-  Serial.print(targetTemp);
-  Serial.print(", ");
-  Serial.println(temperature);
+  analogWrite(27, output);
 }
 
 // static text for display printed once for efficiency
 void initdisplay() {
+  lcd.setBacklight(0x0);
   lcd.clear();
 
   lcd.setCursor(0, 0);

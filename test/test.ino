@@ -24,7 +24,21 @@ float temperature = 0.0; // Thermocouple reading in deg C
 float targetTemp = 0.0;
 
 int t = millis(); // Timeout for LCD updates
+int u = millis(); // Timeout for LCD full refresh
 Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield(); // LCD object
+
+float kp = 0.5;
+float ki = 0.01;
+float kd = 0.15;
+float kt = 0.02;
+
+float integral = 0.0;
+float lastError = 0.0;
+
+float minOutput = 0.0;
+float maxOutput = 1.0;
+
+int dt = millis();
 
 // Initializing thermocouple
 OneWire oneWire(ONE_WIRE_BUS);
@@ -32,9 +46,11 @@ DallasTemperature sensors(&oneWire);
 void setup() {
   Wire.begin(22, 20); // SDA: 22, SCL: 20 for i2c
   lcd.begin(16, 2); // 16x2 lcd display
+  delay(1000);
   initdisplay();
   sensors.begin(); // initializing thermocouple over onewire
   Serial.begin(115200); // initializing serial for debugging
+  pinMode(27, OUTPUT); // initializing output PWM pin for cooler
 }
 
 void loop() {
@@ -58,11 +74,20 @@ void loop() {
     display();
     t = millis();
   }
+
+  float output = calculate(temperature, millis() - dt);
+  dt = millis();
+  analogWrite(27, output * 255);
+  
+  Serial.print(targetTemp);
+  Serial.print(", ");
+  Serial.println(temperature);
 }
 
 // static text for display printed once for efficiency
 void initdisplay() {
-  lcd.setBacklight(0x0);
+  lcd.clear();
+
   lcd.setCursor(0, 0);
   lcd.print("Trgt: ");
 
@@ -81,4 +106,17 @@ void display() {
   lcd.print(temperature);
   lcd.setCursor(13, 1);
   lcd.print("C");
+}
+
+float calculate(float input, int dt) {
+  if (dt == 0) return 0.0;
+  float error = targetTemp - temperature;
+  integral += error * dt;
+  integral = max(-50.0f, min(integral, 50.0f));
+  float derivative = (error - lastError) / dt;
+  float tempDiff = 20 - temperature;
+  float output = -kp * error + -ki * integral + -kd * derivative;
+  output = max(minOutput, min(output, maxOutput));
+  lastError = error;
+  return output;
 }
