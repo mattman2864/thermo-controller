@@ -6,10 +6,6 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-// Rotary encoder pins
-#define CLK 33
-#define DT 12
-
 // Thermocouple data pin
 #define ONE_WIRE_BUS 32
 
@@ -22,68 +18,50 @@
 #define VIOLET 0x5
 #define WHITE 0x7
 
-float increment = 1;
-float temperature = 0.0; // This will eventually be read by thermocouple
 
-int t = millis();
+float increment = 1; // Target temperature change in C per button press
+float temperature = 0.0; // Thermocouple reading in deg C
 
-Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
+int t = millis(); // Timeout for LCD updates
+Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield(); // LCD object
 
+// Initializing thermocouple
 OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
-
-int counter = 0;
-int currentStateCLK;
-int lastStateCLK;
-String currentDir = "";
-volatile int dir = 0;
-
-void IRAM_ATTR encoderChange() {
-  if (digitalRead(DT) == LOW) {
-    dir = -1;
-  } else {
-    dir = 1;
-  }
-}
-
 void setup() {
-  Wire.begin(22, 20);
-  lcd.begin(16, 2);
-  sensors.begin();
-  Serial.begin(115200);
-
-  delay(100);
-
-  // Set encoder pins as inputs
-  pinMode(CLK, INPUT_PULLUP);
-  pinMode(DT, INPUT_PULLUP);
-
-  // Read the initial state of CLK
-  lastStateCLK = digitalRead(CLK);
-
-  // Call updateEncoder() when a change is seen on CLK pin
-  attachInterrupt(digitalPinToInterrupt(CLK), encoderChange, RISING);
-
+  Wire.begin(22, 20); // SDA: 22, SCL: 20 for i2c
+  lcd.begin(16, 2); // 16x2 lcd display
+  sensors.begin(); // initializing thermocouple over onewire
+  Serial.begin(115200); // initializing serial for debugging
+  
+  // Printing static text only once for efficiency and faster clock times
   initdisplay();
 }
 
 void loop() {
+  uint8_t buttons = lcd.readButtons();
+  if (buttons) {
+    if (buttons & BUTTON_UP) {
+      targetTemp += increment;
+    }
+    if (buttons & BUTTON_DOWN) {
+      targetTemp -= increment;
+    }
+  }
+
+  // record temperatures retrieved by thermocouple sensors
   sensors.requestTemperatures();
   temperature = sensors.getTempCByIndex(0);
-
-  if (dir) {
-    counter += dir;
-    dir = 0;
-  }
   
-  if (millis() - t > 1000) {
+  // update display every 1000ms
+  // I would rather do this in a backround process but I'm not sure how to do that
+  if (millis() - t > 500) {
     display();
     t = millis();
   }
-  
-  Serial.println(counter);
 }
 
+// static text for display printed once for efficiency
 void initdisplay() {
   lcd.setCursor(0, 0);
   lcd.print("Trgt: ");
@@ -92,17 +70,18 @@ void initdisplay() {
   lcd.print("Temp: ");
 }
 
+// dynamic text displaying temperatures
 void display() {
   lcd.setCursor(6, 0);
   float targetTemp = increment * counter;
   lcd.print(targetTemp);
-  int length = std::to_string(targetTemp).length() - 4;
-  lcd.setCursor(6+length, 0);
-  lcd.print(" C ");
+//   int length = std::to_string(targetTemp).length() - 4;
+  lcd.setCursor(12, 0);
+  lcd.print("C");
 
   lcd.setCursor(6, 1);
   lcd.print(temperature);
-  length = std::to_string(temperature).length() - 4;
-  lcd.setCursor(6+length, 1);
-  lcd.print(" C ");
+//   length = std::to_string(temperature).length() - 4;
+  lcd.setCursor(12, 1);
+  lcd.print("C");
 }
