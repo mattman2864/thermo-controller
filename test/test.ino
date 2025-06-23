@@ -90,22 +90,22 @@ void initdisplay() {
 
   lcd.setCursor(0, 0);
   lcd.print("Trgt: ");
+  lcd.setCursor(13, 0);
+  lcd.print("C");
 
   lcd.setCursor(0, 1);
   lcd.print("Temp: ");
+  lcd.setCursor(13, 1);
+  lcd.print("C");
 }
 
 // dynamic text displaying temperatures
 void display() {
   lcd.setCursor(6, 0);
   lcd.print(targetTemp);
-  lcd.setCursor(13, 0);
-  lcd.print("C");
 
   lcd.setCursor(6, 1);
   lcd.print(temperature);
-  lcd.setCursor(13, 1);
-  lcd.print("C");
 }
 
 float calculate(float input, int dt) {
