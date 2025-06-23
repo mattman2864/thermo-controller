@@ -74,11 +74,12 @@ void loop() {
     display();
     t = millis();
   }
-
+  // calculate output
   float output = calculate(temperature, millis() - dt);
   dt = millis();
-  analogWrite(27, output * 255);
+  analogWrite(27, output * 255); // output is sent to PWM pin on a scale 0-255
   
+  // printing temps for plotting
   Serial.print(targetTemp);
   Serial.print(", ");
   Serial.println(temperature);
@@ -109,7 +110,7 @@ void display() {
 }
 
 float calculate(float input, int dt) {
-  if (dt == 0) return 0.0;
+  if (dt == 0) return 0.0; // avoid divide by zero error
   float error = targetTemp - temperature;
   integral += error * dt;
   integral = max(-50.0f, min(integral, 50.0f));

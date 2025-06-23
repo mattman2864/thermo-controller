@@ -110,12 +110,12 @@ void display() {
 
 float calculate(float input, int dt) {
   if (dt == 0) return 0.0;
-  float error = targetTemp - temperature;
+  float error = temperature - targetTemp;
   integral += error * dt;
   integral = max(-50.0f, min(integral, 50.0f));
   float derivative = (error - lastError) / dt;
-  float tempDiff = 20 - temperature;
-  float output = -kp * error + -ki * integral + -kd * derivative;
+  float tempDiff = temperature - 20;
+  float output = kp * error + ki * integral + kd * derivative + kt * tempDiff;
   output = max(minOutput, min(output, maxOutput));
   lastError = error;
   return output;
