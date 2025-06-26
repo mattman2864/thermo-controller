@@ -22,9 +22,9 @@
 float increment = 1; // Target temperature change in C per button press
 float temperature = 0.0; // Thermocouple reading in deg C 
 float targetTemp = 0.0;
+int u = millis(); // Timeout for temperature readings
 
 int t = millis(); // Timeout for LCD updates
-int u = millis(); // Timeout for LCD full refresh
 Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield(); // LCD object
 
 float kp = 0.5;
@@ -57,23 +57,27 @@ void loop() {
   uint8_t buttons = lcd.readButtons();
   if (buttons) {
     if (buttons & BUTTON_UP) {
-      targetTemp += increment;
+      targetTemp += increment * 5;
     }
     if (buttons & BUTTON_DOWN) {
+      targetTemp -= increment * 5;
+    }
+    if (buttons & BUTTON_RIGHT) {
+      targetTemp += increment;
+    }
+    if (buttons & BUTTON_LEFT) {
       targetTemp -= increment;
     }
   }
 
   // record temperatures retrieved by thermocouple sensors
+  // if (millis() - u > 2500) {
   sensors.requestTemperatures();
   temperature = sensors.getTempCByIndex(0);
+  //   u = millis();
+  // }
   
-  // update display every 1000ms
-  // I would rather do this in a backround process but I'm not sure how to do that
-  if (millis() - t > 250) {
-    display();
-    t = millis();
-  }
+  display();
 
   float output = calculate(temperature, millis() - dt);
   dt = millis();
@@ -90,22 +94,24 @@ void initdisplay() {
 
   lcd.setCursor(0, 0);
   lcd.print("Trgt: ");
-  lcd.setCursor(13, 0);
-  lcd.print("C");
 
   lcd.setCursor(0, 1);
   lcd.print("Temp: ");
-  lcd.setCursor(13, 1);
-  lcd.print("C");
 }
 
 // dynamic text displaying temperatures
 void display() {
   lcd.setCursor(6, 0);
   lcd.print(targetTemp);
+  int targetLen = String(targetTemp).length();
+  lcd.setCursor(6 + targetLen, 0);
+  lcd.print(" C ");
 
   lcd.setCursor(6, 1);
   lcd.print(temperature);
+  int tempLen = String(temperature).length();
+  lcd.setCursor(6 + tempLen, 1);
+  lcd.print(" C ");
 }
 
 float calculate(float input, int dt) {

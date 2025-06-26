@@ -18,13 +18,12 @@
 #define VIOLET 0x5
 #define WHITE 0x7
 
-
 float increment = 1; // Target temperature change in C per button press
 float temperature = 0.0; // Thermocouple reading in deg C 
 float targetTemp = 0.0;
+int u = millis(); // Timeout for temperature readings
 
 int t = millis(); // Timeout for LCD updates
-int u = millis(); // Timeout for LCD full refresh
 Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield(); // LCD object
 
 float kp = 0.5;
@@ -57,29 +56,28 @@ void loop() {
   uint8_t buttons = lcd.readButtons();
   if (buttons) {
     if (buttons & BUTTON_UP) {
-      targetTemp += increment;
+      targetTemp += increment * 5;
     }
     if (buttons & BUTTON_DOWN) {
+      targetTemp -= increment * 5;
+    }
+    if (buttons & BUTTON_RIGHT) {
+      targetTemp += increment;
+    }
+    if (buttons & BUTTON_LEFT) {
       targetTemp -= increment;
     }
   }
 
-  // record temperatures retrieved by thermocouple sensors
   sensors.requestTemperatures();
   temperature = sensors.getTempCByIndex(0);
   
-  // update display every 1000ms
-  // I would rather do this in a backround process but I'm not sure how to do that
-  if (millis() - t > 250) {
-    display();
-    t = millis();
-  }
-  // calculate output
+  display();
+
   float output = calculate(temperature, millis() - dt);
   dt = millis();
-  analogWrite(27, output * 255); // output is sent to PWM pin on a scale 0-255
-  
-  // printing temps for plotting
+  analogWrite(27, output * 255);
+
   Serial.print(targetTemp);
   Serial.print(", ");
   Serial.println(temperature);
@@ -100,23 +98,25 @@ void initdisplay() {
 void display() {
   lcd.setCursor(6, 0);
   lcd.print(targetTemp);
-  lcd.setCursor(13, 0);
-  lcd.print("C");
+  int targetLen = String(targetTemp).length();
+  lcd.setCursor(6 + targetLen, 0);
+  lcd.print(" C ");
 
   lcd.setCursor(6, 1);
   lcd.print(temperature);
-  lcd.setCursor(13, 1);
-  lcd.print("C");
+  int tempLen = String(temperature).length();
+  lcd.setCursor(6 + tempLen, 1);
+  lcd.print(" C ");
 }
 
 float calculate(float input, int dt) {
-  if (dt == 0) return 0.0; // avoid divide by zero error
-  float error = targetTemp - temperature;
+  if (dt == 0) return 0.0;
+  float error = temperature - targetTemp;
   integral += error * dt;
   integral = max(-50.0f, min(integral, 50.0f));
   float derivative = (error - lastError) / dt;
-  float tempDiff = 20 - temperature;
-  float output = -kp * error + -ki * integral + -kd * derivative;
+  float tempDiff = temperature - 20;
+  float output = kp * error + ki * integral + kd * derivative + kt * tempDiff;
   output = max(minOutput, min(output, maxOutput));
   lastError = error;
   return output;
